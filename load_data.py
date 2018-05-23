@@ -10,18 +10,6 @@ from matplotlib import pyplot as plt    # type: ignore
 
 NpArray = Any
 
-'''
-def load_train_data():
-    print("filtering data...")
-    ok = [os.path.exists(train_data_path + p + ".jpg") for p in tqdm(x)]
-    x = [xi for i, xi in enumerate(x) if ok[i]]
-    y = y[ok]
-    print("after filtering: len(x)", len(x), "y.shape", y.shape)
-
-    num_classes = NUM_CLASSES if NUM_CLASSES else np.amax(y) + 1
-    return x, y, num_classes
-'''
-
 if __name__ == "__main__":
     csv_path = "../data/recognition/train.csv"
 
@@ -32,7 +20,7 @@ if __name__ == "__main__":
     print("len(x)", len(x), "y.shape", y.shape)
 
     L = list(zip(x, y))
-    
+
     for id, cls in tqdm(L):
         src = "../data/recognition/train/%s.jpg" % id
         directory = "recognition/%d" % cls
