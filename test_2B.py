@@ -63,7 +63,7 @@ opt.LOG = edict()
 opt.LOG.LOG_FILE = osp.join(opt.EXPERIMENT.DIR, 'log_{}.txt'.format(opt.EXPERIMENT.TASK))
 
 opt.TEST = edict()
-opt.TEST.CHECKPOINT = '/home/guang/Projects/Kaggle/landmark-recognition-challenge/experiments/2B/resnet50_[8]_96.07.pk'
+opt.TEST.CHECKPOINT = 'experiments/2B/best_model.pk'
 opt.TEST.WORKERS = 8
 opt.TEST.BATCH_SIZE = 32
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'pred.npz')
