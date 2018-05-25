@@ -2,7 +2,7 @@
 """ Takes prediction as a series of numpy arrays, generates a submission csv file. """
 
 from typing import *
-import os
+import os, sys
 from shutil import copyfile
 import numpy as np,  pandas as pd       # type: ignore
 from tqdm import tqdm                   # type: ignore
@@ -20,7 +20,11 @@ def load_test_data(path: str) -> List[str]:
     return x
 
 if __name__ == "__main__":
-    filename = "experiments/2B/pred.npz"
+    if len(sys.argv) != 2:
+        print("usage: %s <predictions.npz>" % sys.argv[0])
+        sys.exit(0)
+
+    filename = sys.argv[1]
     data = np.load(filename)
     print(data)
 
