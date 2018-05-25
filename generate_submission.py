@@ -27,25 +27,28 @@ if __name__ == "__main__":
     pred_indices = data["pred_indices"]
     pred_scores = data["pred_scores"]
     images = data["images"]
+    confidences = data["pred_confs"]
 
-    print("pred_indices", pred_indices.shape, pred_indices)
-    print("pred_scores", pred_scores.shape, pred_scores)
-    print("images", images.shape, images)
+    print("pred_indices", pred_indices.shape)
+    print(pred_indices)
+    print("pred_scores", pred_scores.shape)
+    print(pred_scores)
+    print("images", images.shape)
+    print(images)
+    print("confidences", confidences.shape)
+    print(confidences)
 
     predictions = dict()
 
     for i in range(images.size):
         name = os.path.splitext(images[i])[0]
-        weights = pred_scores[i, :]
-        p = np.exp(weights[0]) / np.sum(np.exp(weights))
-        print("weights", weights)
-        print("p", p)
-
-        predictions[name] = pred_indices[i, 0]
-        print("predictions[%s] = %d %f" % (name, predictions[name], p))
+        index = pred_indices[i, 0]
+        conf = confidences[i, 0]
+        value = "%d %f" % (index, conf)
+        # print("predictions[%s] = %s" % (name, value))
+        predictions[name] = value
 
     x_test = load_test_data("recognition/test.csv")
-    num_classes = 14951
 
     values = [""] * len(x_test)
 
