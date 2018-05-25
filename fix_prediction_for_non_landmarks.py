@@ -3,6 +3,7 @@
 Saved weights from the file must match the model code from train.py. """
 
 import os, sys
+from glob import glob
 from typing import *
 import numpy as np                      # type: ignore
 from skimage.io import imread           # type: ignore
@@ -10,10 +11,20 @@ from tqdm import tqdm                   # type: ignore
 import pandas as pd                     # type: ignore
 from keras.models import load_model     # type: ignore
 from skimage.transform import resize    # type: ignore
-from predict import load_test_data
 
 NpArray = Any
 IMAGE_SIZE = 250
+# BATCH_SIZE = 300
+BATCH_SIZE = 10
+
+def load_test_data(path: str) -> List[str]:
+    """ Loads CSV files into memory. """
+    print("reading data...")
+    data = pd.read_csv(path)
+    x = data["id"].tolist()
+    print("len(x)", len(x))
+    print()
+    return x
 
 def load_submission(path: str) -> List[str]:
     """ Loads CSV files into memory. """
@@ -24,23 +35,38 @@ def load_submission(path: str) -> List[str]:
     print()
     return y
 
-def test_image(image_name: str) -> Tuple[str, bool]:
+def load_image(image_name: str) -> NpArray:
     """ Returns whether image is landmark or not. """
     try:
-        img = imread(os.path.join("data/test/", image_name + ".jpg"))
+        # img = imread(os.path.join("data/test/", image_name + ".jpg"))
+        img = imread(image_name)
+        startx, starty = (img.shape[0]-IMAGE_SIZE) // 2, (img.shape[1]-IMAGE_SIZE) // 2
+        img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
+        return img
     except FileNotFoundError:
-        return image_name, False
+        # print("error reading %s" % image_name)
+        return np.zeros((IMAGE_SIZE, IMAGE_SIZE, 3))
 
-    img = resize(img, (IMAGE_SIZE, IMAGE_SIZE))
-    img = np.expand_dims(img, axis=0)
-    # img -= np.mean(img)
-    # img = img / np.std(img)
+def load_batch(images: List[str]) -> NpArray:
+    batch = [load_image(image) for image in images]
+    data = np.array(batch)
 
-    prediction = model.predict(img)
-    print("prediction", prediction)
-    res = prediction[0] >= 0.5
-    print("res", res)
-    return res
+    data = data - np.mean(data, dtype=np.float32)
+    data = data / np.std(data, dtype=np.float32)
+
+    return data
+
+def predict_on_batch(images: NpArray) -> List[bool]:
+    batch = load_batch(images)
+    predictions = np.zeros(batch.shape[0], dtype=bool)
+
+    # since I trained model on CPU, batch size is 1
+    for i in range(batch.shape[0]):
+        pred = model.predict(batch[i:i+1])
+        predictions[i] = pred[0] >= 0.5
+        # print("image=%s result=%s" % (images[i], predictions[i]))
+
+    return predictions
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
@@ -51,21 +77,29 @@ if __name__ == "__main__":
     print("loading model")
     model = load_model(sys.argv[2])
     print("loading test data")
-    x_test = load_test_data("data/recognition/test.csv")
+    x_test = load_test_data("raw_data/test.csv")
     print("loading submission")
     y_test = load_submission(candidate_csv)
 
-    # TODO: implement normalization
-    # x_test -= np.mean(x_test)
-    # x_test = x_test / np.std(x_test)
+    # # debug validation
+    # x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
 
-    print("testing images...")
-    for image_name in tqdm(x_test):
-        res = test_image(image_name)
-        if not res:
-            y_test[image_name] = ''
+    batches = [x_test[i : i + BATCH_SIZE] for i in range(0, len(x_test), BATCH_SIZE)]
+    non_landmarks: Set[str] = set()
 
-    print("done")
+    print("testing images")
+    for batch in tqdm(batches):
+        pred = predict_on_batch(batch)
+
+        for image, res in zip(batch, pred):
+            if not res:
+                non_landmarks.add(image)
+
+    for i, image in enumerate(x_test):
+        if image in non_landmarks:
+            y_test[i] = ''
+
+    print("generating submission file")
     df = pd.DataFrame({"id": x_test, "landmarks": y_test})
-    os.makedirs("./results/", exist_ok=True)
+    os.makedirs(os.path.dirname(result_csv), exist_ok=True)
     df.to_csv(result_csv, index=False)

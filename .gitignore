@@ -3,4 +3,5 @@ recognition
 retrieval
 raw_data
 __pycache__
-results
+models
+submissions
