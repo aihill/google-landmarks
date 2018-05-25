@@ -30,8 +30,8 @@ def load_pics_from_dir(path: str) -> NpArray:
     return res
 
 if __name__ == "__main__":
-    positives = load_pics_from_dir("raw_data/junk_classifier/true_classes")
-    negatives = load_pics_from_dir("raw_data/junk_classifier/false_classes")
+    positives = load_pics_from_dir("data/junk_classifier/true_classes")
+    negatives = load_pics_from_dir("data/junk_classifier/false_classes")
 
     x = np.concatenate((positives, negatives), axis=0)
     y = np.concatenate(([1] * positives.shape[0], [0] * negatives.shape[0]), axis=0)

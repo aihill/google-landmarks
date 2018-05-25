@@ -71,7 +71,7 @@ opt.TRAIN.LR_MILESTONES = [5, 7, 9, 10, 11, 12, 13]
 opt.TRAIN.EPOCHS = 13
 opt.TRAIN.VAL_SUFFIX = '7c'
 opt.TRAIN.SAVE_FREQ = 1
-opt.TRAIN.RESUME = None
+opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, "best_model.pk")
 
 opt.DATASET = 'recognition'
 

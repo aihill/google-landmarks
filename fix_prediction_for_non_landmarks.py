@@ -38,8 +38,10 @@ def load_submission(path: str) -> List[str]:
 def load_image(image_name: str) -> NpArray:
     """ Returns whether image is landmark or not. """
     try:
-        # img = imread(os.path.join("data/test/", image_name + ".jpg"))
-        img = imread(image_name)
+        path = os.path.join("data/test/", image_name + ".jpg")
+        img = imread(path)
+        # img = imread(image_name)
+
         startx, starty = (img.shape[0]-IMAGE_SIZE) // 2, (img.shape[1]-IMAGE_SIZE) // 2
         img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
         return img
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     print("loading model")
     model = load_model(sys.argv[2])
     print("loading test data")
-    x_test = load_test_data("raw_data/test.csv")
+    x_test = load_test_data("data/test.csv")
     print("loading submission")
     y_test = load_submission(candidate_csv)
 
