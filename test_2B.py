@@ -40,10 +40,8 @@ model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
-# In[ ]:
 cudnn.benchmark = True
 
-# In[ ]:
 timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 
 opt = edict()
@@ -75,7 +73,6 @@ opt.VISDOM.PORT = 8097
 opt.VISDOM.ENV = '[' + opt.DATASET + ']' + opt.EXPERIMENT.CODENAME
 
 
-# In[ ]:
 
 
 if not osp.exists(opt.EXPERIMENT.DIR):
@@ -83,14 +80,12 @@ if not osp.exists(opt.EXPERIMENT.DIR):
 
 
 
-# In[ ]:
 
 logger = create_logger(opt.LOG.LOG_FILE)
 logger.info('\n\nOptions:')
 logger.info(pprint.pformat(opt))
 
 
-# In[ ]:
 DATA_INFO = cfg.DATASETS[opt.DATASET.upper()]
 
 # Data-loader of testing set
@@ -101,7 +96,6 @@ transform_test = transforms.Compose([
     transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],
                           std = [ 0.229, 0.224, 0.225 ]),
 ])
-# In[ ]:
 
 #train_dataset = datasets.ImageFolder(DATA_INFO.TRAIN_DIR, transform_test)
 test_dataset = datasets.ImageFolder(DATA_INFO.TEST_DIR, transform_test)
@@ -110,12 +104,10 @@ logger.info('{} images are found for test'.format(len(test_dataset.imgs)))
 test_list = pd.read_csv(osp.join(DATA_INFO.ROOT_DIR, 'test.csv'))
 test_list = test_list['id']
 logger.info('{} images are expected for test'.format(len(test_list)))
-# In[ ]:
 
 test_loader = torch.utils.data.DataLoader(
     test_dataset, batch_size=opt.TEST.BATCH_SIZE, shuffle=False, num_workers=opt.TEST.WORKERS)
 
-# In[ ]:
 
 # create model
 if opt.MODEL.PRETRAINED:
@@ -126,7 +118,6 @@ else:
 #    logger.info("=> creating model '{}'".format(args.arch))
 #    model = models.__dict__[opt.MODEL.ARCH]()
 
-# In[ ]:
 
 if opt.MODEL.ARCH.startswith('resnet'):
     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
@@ -139,7 +130,6 @@ else:
     model = torch.nn.DataParallel(model).cuda()
 
 
-# In[ ]:
 
 last_checkpoint = torch.load(opt.TEST.CHECKPOINT)
 assert(last_checkpoint['arch']==opt.MODEL.ARCH)
@@ -151,13 +141,11 @@ last_epoch = last_checkpoint['epoch']
     #logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
-# In[ ]:
 
 vis = visdom.Visdom(port=opt.VISDOM.PORT)
 vis.close()
 vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
-# In[ ]:
 
 softmax = torch.nn.Softmax(dim=1).cuda()
 
@@ -189,7 +177,6 @@ pred_indices = np.concatenate(pred_indices)
 pred_scores = np.concatenate(pred_scores)
 pred_confs = np.concatenate(pred_confs)
 
-# In[ ]:
 images = [osp.basename(image) for image, _ in test_dataset.imgs]
 
 np.savez(opt.TEST.OUTPUT, pred_indices=pred_indices, pred_scores=pred_scores,

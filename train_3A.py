@@ -39,10 +39,8 @@ model_names = sorted(name for name in models.__dict__
     and callable(models.__dict__[name]))
 print(model_names)
 
-# In[ ]:
 cudnn.benchmark = True
 
-# In[ ]:
 timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 
 opt = edict()
@@ -69,8 +67,8 @@ opt.TRAIN.PRINT_FREQ = 20
 opt.TRAIN.SEED = None
 opt.TRAIN.LEARNING_RATE = 1e-4
 opt.TRAIN.LR_GAMMA = 0.5
-opt.TRAIN.LR_MILESTONES = [5, 7, 9, 10, 11, 12]
-opt.TRAIN.EPOCHS = 12
+opt.TRAIN.LR_MILESTONES = [5, 7, 9, 10, 12, 14]
+opt.TRAIN.EPOCHS = 20
 opt.TRAIN.VAL_SUFFIX = '7c'
 opt.TRAIN.SAVE_FREQ = 1
 opt.TRAIN.RESUME = None
@@ -80,7 +78,6 @@ opt.DATASET = 'recognition'
 opt.VISDOM = edict()
 opt.VISDOM.PORT = 8097
 opt.VISDOM.ENV = '[' + opt.DATASET + ']' + opt.EXPERIMENT.CODENAME
-# In[ ]:
 
 
 if opt.TRAIN.SEED is None:
@@ -94,14 +91,12 @@ torch.manual_seed(opt.TRAIN.SEED)
 torch.cuda.manual_seed(opt.TRAIN.SEED)
 
 
-# In[ ]:
 
 
 if not osp.exists(opt.EXPERIMENT.DIR):
     os.makedirs(opt.EXPERIMENT.DIR)
 
 
-# In[ ]:
 
 
 logger = create_logger(opt.LOG.LOG_FILE)
@@ -109,7 +104,6 @@ logger.info('\n\nOptions:')
 logger.info(pprint.pformat(opt))
 
 
-# In[ ]:
 DATA_INFO = cfg.DATASETS[opt.DATASET.upper()]
 
 # Data-loader of training set
@@ -130,7 +124,6 @@ transform_val = transforms.Compose([
     transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],
                           std = [ 0.229, 0.224, 0.225 ]),
 ])
-# In[ ]:
 
 train_dataset = SortedFolder(DATA_INFO.TRAIN_DIR, transform_train)
 val_dataset = SortedFolder(DATA_INFO.TRAIN_DIR, transform_val)
@@ -149,7 +142,6 @@ val_dataset.samples = val_dataset.imgs = val_imgs
 
 
 
-# In[ ]:
 
 
 train_loader = torch.utils.data.DataLoader(
@@ -158,7 +150,6 @@ train_loader = torch.utils.data.DataLoader(
 test_loader = torch.utils.data.DataLoader(
     val_dataset, batch_size=opt.TRAIN.BATCH_SIZE, shuffle=False, num_workers=opt.TRAIN.WORKERS)
 
-# In[ ]:
 
 # create model
 if opt.MODEL.PRETRAINED:
@@ -169,7 +160,6 @@ else:
 #    logger.info("=> creating model '{}'".format(args.arch))
 #    model = models.__dict__[opt.MODEL.ARCH]()
 
-# In[ ]:
 
 if opt.MODEL.ARCH.startswith('densenet'):
     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
@@ -181,12 +171,10 @@ else:
     raise NotImplementedError
     model = torch.nn.DataParallel(model).cuda()
 
-# In[ ]:
 
 optimizer = optim.Adam(model.module.parameters(), opt.TRAIN.LEARNING_RATE)
 lr_scheduler = MultiStepLR(optimizer, opt.TRAIN.LR_MILESTONES, gamma=opt.TRAIN.LR_GAMMA, last_epoch=-1)
 
-# In[ ]:
 if opt.TRAIN.RESUME is None:
     last_epoch = 0
     logger.info("Training will start from Epoch {}".format(last_epoch+1))
@@ -202,7 +190,6 @@ else:
     logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
-# In[ ]:
 
 
 vis = visdom.Visdom(port=opt.VISDOM.PORT)
@@ -210,17 +197,10 @@ vis.close()
 vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 
-
-# In[ ]:
-
-
 train_losses = []
 train_top1s = []
 test_losses = []
 test_top1s = []
-
-
-# In[ ]:
 
 
 def visualize():
@@ -252,17 +232,9 @@ def visualize():
         }
     )
 
-
-# In[ ]:
-
-
 def save_checkpoint(state, filename='checkpoint.pk'):
     torch.save(state, osp.join(opt.EXPERIMENT.DIR, filename))
     logger.info('A snapshot was saved to {}.'.format(filename))
-
-
-# In[ ]:
-
 
 def train(train_loader, model, criterion, optimizer, epoch):
     logger.info('Epoch {}'.format(epoch))
@@ -316,10 +288,6 @@ def train(train_loader, model, criterion, optimizer, epoch):
     train_losses.append(losses.avg)
     train_top1s.append(top1.avg)
 
-
-# In[ ]:
-
-
 def validate(val_loader, model, criterion):
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -367,21 +335,11 @@ def validate(val_loader, model, criterion):
 
     return top1.avg
 
-
-
-
-
-# In[ ]:
-
-
 criterion = nn.CrossEntropyLoss()
-
-
-# In[ ]:
-
 
 best_prec1 = 0
 best_epoch = 0
+
 for epoch in range(last_epoch+1, opt.TRAIN.EPOCHS+1):
     logger.info('-'*50)
     lr_scheduler.step(epoch)
@@ -417,16 +375,12 @@ for epoch in range(last_epoch+1, opt.TRAIN.EPOCHS+1):
     visualize()
 
 
-# In[ ]:
 logger.info('Best accuracy for single crop: {:.02f}%'.format(best_prec1))
 #best_checkpoint_path = osp.join(opt.EXPERIMENT.DIR, 'best_model.pk')
 #logger.info("Loading parameters from the best checkpoint '{}',".format(best_checkpoint_path))
 #checkpoint = torch.load(best_checkpoint_path)
 #logger.info("which has a single crop accuracy {:.02f}%.".format(checkpoint['prec1']))
 #model.load_state_dict(checkpoint['state_dict'])
-
-
-# In[ ]:
 
 
 best_epoch = np.argmin(test_losses)
@@ -456,4 +410,3 @@ plt.xlabel('epoch')
 plt.ylabel('accuracy (%)')
 plt.title('accuracy over epoch')
 plt.savefig(osp.join(opt.EXPERIMENT.DIR, 'accuracy_curves.png'))
-# In[ ]:
