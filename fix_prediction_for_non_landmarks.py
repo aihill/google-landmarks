@@ -10,12 +10,11 @@ from skimage.io import imread           # type: ignore
 from tqdm import tqdm                   # type: ignore
 import pandas as pd                     # type: ignore
 from keras.models import load_model     # type: ignore
-from skimage.transform import resize    # type: ignore
 
 NpArray = Any
-IMAGE_SIZE          = 250
+IMAGE_SIZE          = 256
 BATCH_SIZE          = 10
-DEBUG_VALIDATION    = True
+DEBUG_VALIDATION    = False
 
 def load_test_data(path: str) -> List[str]:
     """ Loads CSV files into memory. """
@@ -44,10 +43,7 @@ def load_image(image_name: str) -> NpArray:
         else:
             img = imread(image_name)
 
-        startx, starty = (img.shape[0]-IMAGE_SIZE) // 2, (img.shape[1]-IMAGE_SIZE) // 2
-        # img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
-        img = resize(img, (IMAGE_SIZE, IMAGE_SIZE))
-        return np.array(img, dtype=np.float64)
+        return np.array(img, dtype=np.float32)
     except FileNotFoundError:
         # print("error reading %s" % image_name)
         return np.zeros((IMAGE_SIZE, IMAGE_SIZE, 3))
@@ -56,7 +52,7 @@ def load_batch(images: List[str]) -> NpArray:
     batch = [load_image(image) for image in images]
     data = np.array(batch)
 
-    mean, std = 0.476404, 0.285965
+    mean, std = 121.926628, 72.622498
     data -= mean
     data /= std
 
@@ -84,8 +80,8 @@ if __name__ == "__main__":
     model = load_model(sys.argv[2])
 
     if DEBUG_VALIDATION:
-        x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
-        # x_test = list(glob("../google_landmark/data/junk_classifier/true_classes/*"))
+        # x_test = list(glob("data/junk_classifier/true_classes/*.jpg"))
+        x_test = list(glob("data/junk_classifier/false_classes/*.jpg"))
     else:
         print("loading test data")
         x_test = load_test_data("data/test.csv")

@@ -7,7 +7,6 @@ from glob import glob
 import numpy as np                  # type: ignore
 from skimage.io import imread       # type: ignore
 from tqdm import tqdm               # type: ignore
-from skimage.transform import resize                    # type: ignore
 from sklearn.model_selection import train_test_split    # type: ignore
 from keras.utils import to_categorical                  # type: ignore
 from keras.models import Sequential                     # type: ignore
@@ -17,13 +16,13 @@ from keras.callbacks import ModelCheckpoint, CSVLogger  # type: ignore
 from keras.callbacks import ReduceLROnPlateau           # type: ignore
 
 NpArray = Any
-IMAGE_SIZE = 250        # test set now uses resolution 256x256
+IMAGE_SIZE = 256        # test set now uses resolution 256x256
 
 def load_pics_from_dir(path: str) -> NpArray:
     """ Reads all images from the directory. """
     def load(path: NpArray) -> NpArray:
         img = imread(path)
-        return resize(img, (IMAGE_SIZE, IMAGE_SIZE))
+        return np.array(img, dtype=np.float32)
 
     print("reading %s" % path)
     res = np.array([load(img) for img in tqdm(glob(os.path.join(path, "*.jpg")))])
@@ -34,16 +33,16 @@ if __name__ == "__main__":
     positives = load_pics_from_dir("data/junk_classifier/true_classes")
     negatives = load_pics_from_dir("data/junk_classifier/false_classes")
 
-    x = np.concatenate((positives, negatives), axis=0)
-    y = np.concatenate(([1] * positives.shape[0], [0] * negatives.shape[0]), axis=0)
+    # x = np.concatenate((positives, negatives), axis=0)
+    x = np.vstack((positives, negatives))
+    # y = np.concatenate(([1] * positives.shape[0], [0] * negatives.shape[0]), axis=0)
+    y = np.hstack(([1] * positives.shape[0], [0] * negatives.shape[0]))
     print(y)
     print(y.shape)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-    print("y_train")
-    print(np.mean(y_train))
-    print("y_test")
-    print(np.mean(y_test))
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, stratify=y)
+    print("y_train mean:", np.mean(y_train))
+    print("y_test mean:", np.mean(y_test))
 
     mean, std = np.mean(x_train), np.std(x_train)
     print("mean=%f std=%f" % (mean, std))
@@ -58,6 +57,7 @@ if __name__ == "__main__":
     input_shape = (IMAGE_SIZE, IMAGE_SIZE, 3)
     batch_size = 1
     epochs = 50
+    dropout = 0.7
 
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3),
@@ -65,19 +65,19 @@ if __name__ == "__main__":
                      padding='same',
                      input_shape=input_shape))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    model.add(Dropout(dropout))
 
     model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    model.add(Dropout(dropout))
 
     model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    model.add(Dropout(dropout))
 
     model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
+    model.add(Dropout(dropout))
 
     model.add(Flatten())
     model.add(Dense(1, activation='sigmoid'))
