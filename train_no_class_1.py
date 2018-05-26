@@ -30,14 +30,13 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from world import cfg, create_logger, AverageMeter, accuracy
+from world_no_class import cfg, create_logger, AverageMeter, accuracy
 
 
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
-print(model_names)
 
 cudnn.benchmark = True
 
@@ -46,13 +45,13 @@ timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 opt = edict()
 
 opt.MODEL = edict()
-opt.MODEL.ARCH = 'densenet169'
+opt.MODEL.ARCH = 'resnet50'
 opt.MODEL.PRETRAINED = True
-opt.MODEL.IMAGE_SIZE = 250
+opt.MODEL.IMAGE_SIZE = 256
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = '3B'
+opt.EXPERIMENT.CODENAME = 'no_class_1'
 opt.EXPERIMENT.TASK = 'finetune'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -63,7 +62,7 @@ opt.TRAIN = edict()
 opt.TRAIN.BATCH_SIZE = 32
 opt.TRAIN.SHUFFLE = True
 opt.TRAIN.WORKERS = 12
-opt.TRAIN.PRINT_FREQ = 20
+opt.TRAIN.PRINT_FREQ = 1
 opt.TRAIN.SEED = None
 opt.TRAIN.LEARNING_RATE = 1e-4
 opt.TRAIN.LR_GAMMA = 0.5
@@ -71,9 +70,9 @@ opt.TRAIN.LR_MILESTONES = [5, 7, 9, 10, 11, 12]
 opt.TRAIN.EPOCHS = 12
 opt.TRAIN.VAL_SUFFIX = '7c'
 opt.TRAIN.SAVE_FREQ = 1
-opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, 'best_model.pk')
+opt.TRAIN.RESUME = None
 
-opt.DATASET = 'recognition'
+opt.DATASET = 'no_class'
 
 opt.VISDOM = edict()
 opt.VISDOM.PORT = 8097
@@ -161,11 +160,11 @@ else:
 #    model = models.__dict__[opt.MODEL.ARCH]()
 
 
-if opt.MODEL.ARCH.startswith('densenet'):
+if opt.MODEL.ARCH.startswith('resnet'):
     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
     #model.avgpool = nn.AdaptiveAvgPool2d(1)
-    model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
+    model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
     model = torch.nn.DataParallel(model).cuda()
 else:
     raise NotImplementedError
@@ -261,7 +260,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 1))
         losses.update(loss.data[0], input.size(0))
         top1.update(prec1[0], input.size(0))
         top5.update(prec5[0], input.size(0))
@@ -308,7 +307,7 @@ def validate(val_loader, model, criterion):
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 1))
         losses.update(loss.data[0], input.size(0))
         top1.update(prec1[0], input.size(0))
         top5.update(prec5[0], input.size(0))
