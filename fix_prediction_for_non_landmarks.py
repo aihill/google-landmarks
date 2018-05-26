@@ -45,7 +45,8 @@ def load_image(image_name: str) -> NpArray:
             img = imread(image_name)
 
         startx, starty = (img.shape[0]-IMAGE_SIZE) // 2, (img.shape[1]-IMAGE_SIZE) // 2
-        img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
+        # img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
+        img = resize(img, (IMAGE_SIZE, IMAGE_SIZE))
         return np.array(img, dtype=np.float64)
     except FileNotFoundError:
         # print("error reading %s" % image_name)
@@ -83,8 +84,8 @@ if __name__ == "__main__":
     model = load_model(sys.argv[2])
 
     if DEBUG_VALIDATION:
-        # x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
-        x_test = list(glob("../google_landmark/data/junk_classifier/true_classes/*"))
+        x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
+        # x_test = list(glob("../google_landmark/data/junk_classifier/true_classes/*"))
     else:
         print("loading test data")
         x_test = load_test_data("data/test.csv")
