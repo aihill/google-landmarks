@@ -62,7 +62,7 @@ opt.LOG.LOG_FILE = osp.join(opt.EXPERIMENT.DIR, 'log_{}.txt'.format(opt.EXPERIME
 
 opt.TEST = edict()
 opt.TEST.CHECKPOINT = 'experiments/3A/best_model.pk'
-opt.TEST.WORKERS = 8
+opt.TEST.WORKERS = 12
 opt.TEST.BATCH_SIZE = 32
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'pred.npz')
 

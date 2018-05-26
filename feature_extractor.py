@@ -1,5 +1,6 @@
 #!/usr/bin/python3.6
 __version__ = '0.3.17'
+# type: ignore
 
 import os
 import os.path as osp
@@ -47,13 +48,13 @@ timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 opt = edict()
 
 opt.MODEL = edict()
-opt.MODEL.ARCH = 'resnet50'
+opt.MODEL.ARCH = 'densenet121'
 opt.MODEL.PRETRAINED = True
 opt.MODEL.IMAGE_SIZE = 256
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = '2B'
+opt.EXPERIMENT.CODENAME = 'feature_extractor'
 opt.EXPERIMENT.TASK = 'test'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -61,7 +62,7 @@ opt.LOG = edict()
 opt.LOG.LOG_FILE = osp.join(opt.EXPERIMENT.DIR, 'log_{}.txt'.format(opt.EXPERIMENT.TASK))
 
 opt.TEST = edict()
-opt.TEST.CHECKPOINT = 'experiments/2B/best_model.pk'
+opt.TEST.CHECKPOINT = 'experiments/feature_extractor.pk'
 opt.TEST.WORKERS = 12
 opt.TEST.BATCH_SIZE = 32
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'pred.npz')
@@ -97,8 +98,10 @@ transform_test = transforms.Compose([
                           std = [ 0.229, 0.224, 0.225 ]),
 ])
 
-#train_dataset = datasets.ImageFolder(DATA_INFO.TRAIN_DIR, transform_test)
+train_dataset = datasets.ImageFolder(DATA_INFO.TRAIN_DIR, transform_test)
 test_dataset = datasets.ImageFolder(DATA_INFO.TEST_DIR, transform_test)
+
+logger.info('{} images are found for train'.format(len(train_dataset.imgs)))
 logger.info('{} images are found for test'.format(len(test_dataset.imgs)))
 
 test_list = pd.read_csv(osp.join(DATA_INFO.ROOT_DIR, 'test.csv'))
@@ -115,30 +118,30 @@ if opt.MODEL.PRETRAINED:
     model = models.__dict__[opt.MODEL.ARCH](pretrained=True)
 else:
     raise NotImplementedError
-#    logger.info("=> creating model '{}'".format(args.arch))
-#    model = models.__dict__[opt.MODEL.ARCH]()
 
 
-if opt.MODEL.ARCH.startswith('resnet'):
-    assert(opt.MODEL.INPUT_SIZE % 32 == 0)
-    model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-    #model.avgpool = nn.AdaptiveAvgPool2d(1)
-    model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
-    model = torch.nn.DataParallel(model).cuda()
-else:
-    raise NotImplementedError
-    model = torch.nn.DataParallel(model).cuda()
+# if opt.MODEL.ARCH.startswith('resnet'):
+#     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
+#     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
+#     model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
+#     model = torch.nn.DataParallel(model).cuda()
+# elif opt.MODEL.ARCH.startswith('densenet'):
+#     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
+#     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
+#     model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
+#     model = torch.nn.DataParallel(model).cuda()
+# else:
+#     raise NotImplementedError
 
+model_layers = list(model.module.children())
+model_layers.pop()
+model = nn.Sequential(*model_layers).cuda()
 
 
 last_checkpoint = torch.load(opt.TEST.CHECKPOINT)
 assert(last_checkpoint['arch']==opt.MODEL.ARCH)
 model.module.load_state_dict(last_checkpoint['state_dict'])
-#optimizer.load_state_dict(last_checkpoint['optimizer'])
 logger.info("Checkpoint '{}' was loaded.".format(opt.TEST.CHECKPOINT))
-
-last_epoch = last_checkpoint['epoch']
-    #logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
 
@@ -149,11 +152,13 @@ vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 softmax = torch.nn.Softmax(dim=1).cuda()
 
-pred_indices = []
-pred_scores = []
-pred_confs = []
+# pred_indices = []
+# pred_scores = []
+# pred_confs = []
 
 model.eval()
+
+# FIXME: I probably can't afford keeping 2048*1M floats in memory, can I?
 
 for i, (input, target) in enumerate(tqdm(test_loader)):
     target = target.cuda(async=True)
@@ -161,21 +166,21 @@ for i, (input, target) in enumerate(tqdm(test_loader)):
 
     # compute output
     output = model(input_var)
-    top_scores, top_indices = torch.topk(output, k=20)
-    top_indices = top_indices.data.cpu().numpy()
-    top_scores = top_scores.data.cpu().numpy()
+    # top_scores, top_indices = torch.topk(output, k=20)
+    # top_indices = top_indices.data.cpu().numpy()
+    # top_scores = top_scores.data.cpu().numpy()
 
-    confs = softmax(output)
-    top_confs, _ = torch.topk(confs, k=20)
-    top_confs = top_confs.data.cpu().numpy()
+    # confs = softmax(output)
+    # top_confs, _ = torch.topk(confs, k=20)
+    # top_confs = top_confs.data.cpu().numpy()
+    #
+    # pred_indices.append(top_indices)
+    # pred_scores.append(top_scores)
+    # pred_confs.append(top_confs)
 
-    pred_indices.append(top_indices)
-    pred_scores.append(top_scores)
-    pred_confs.append(top_confs)
-
-pred_indices = np.concatenate(pred_indices)
-pred_scores = np.concatenate(pred_scores)
-pred_confs = np.concatenate(pred_confs)
+# pred_indices = np.concatenate(pred_indices)
+# pred_scores = np.concatenate(pred_scores)
+# pred_confs = np.concatenate(pred_confs)
 
 images = [osp.basename(image) for image, _ in test_dataset.imgs]
 

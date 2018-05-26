@@ -30,7 +30,7 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from world_no_class import cfg, create_logger, AverageMeter, accuracy
+from world import cfg, create_logger, AverageMeter, accuracy
 
 
 
