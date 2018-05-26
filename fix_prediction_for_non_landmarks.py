@@ -13,9 +13,9 @@ from keras.models import load_model     # type: ignore
 from skimage.transform import resize    # type: ignore
 
 NpArray = Any
-IMAGE_SIZE = 250
-# BATCH_SIZE = 300
-BATCH_SIZE = 10
+IMAGE_SIZE          = 250
+BATCH_SIZE          = 10
+DEBUG_VALIDATION    = True
 
 def load_test_data(path: str) -> List[str]:
     """ Loads CSV files into memory. """
@@ -39,12 +39,14 @@ def load_image(image_name: str) -> NpArray:
     """ Returns whether image is landmark or not. """
     try:
         path = os.path.join("data/test/", image_name + ".jpg")
-        img = imread(path)
-        # img = imread(image_name)
+        if not DEBUG_VALIDATION:
+            img = imread(path)
+        else:
+            img = imread(image_name)
 
         startx, starty = (img.shape[0]-IMAGE_SIZE) // 2, (img.shape[1]-IMAGE_SIZE) // 2
         img = img[startx : startx + IMAGE_SIZE, starty : starty + IMAGE_SIZE, :]
-        return img
+        return np.array(img, dtype=np.float64)
     except FileNotFoundError:
         # print("error reading %s" % image_name)
         return np.zeros((IMAGE_SIZE, IMAGE_SIZE, 3))
@@ -53,8 +55,9 @@ def load_batch(images: List[str]) -> NpArray:
     batch = [load_image(image) for image in images]
     data = np.array(batch)
 
-    data = data - np.mean(data, dtype=np.float32)
-    data = data / np.std(data, dtype=np.float32)
+    mean, std = 0.476404, 0.285965
+    data -= mean
+    data /= std
 
     return data
 
@@ -78,13 +81,15 @@ if __name__ == "__main__":
     result_csv, candidate_csv = sys.argv[1], sys.argv[3]
     print("loading model")
     model = load_model(sys.argv[2])
-    print("loading test data")
-    x_test = load_test_data("data/test.csv")
-    print("loading submission")
-    y_test = load_submission(candidate_csv)
 
-    # # debug validation
-    # x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
+    if DEBUG_VALIDATION:
+        # x_test = list(glob("../google_landmark/data/junk_classifier/false_classes/*"))
+        x_test = list(glob("../google_landmark/data/junk_classifier/true_classes/*"))
+    else:
+        print("loading test data")
+        x_test = load_test_data("data/test.csv")
+        print("loading submission")
+        y_test = load_submission(candidate_csv)
 
     batches = [x_test[i : i + BATCH_SIZE] for i in range(0, len(x_test), BATCH_SIZE)]
     non_landmarks: Set[str] = set()
@@ -94,14 +99,18 @@ if __name__ == "__main__":
         pred = predict_on_batch(batch)
 
         for image, res in zip(batch, pred):
+            if DEBUG_VALIDATION:
+                print("image={} res={}".format(image, res))
+
             if not res:
                 non_landmarks.add(image)
 
-    for i, image in enumerate(x_test):
-        if image in non_landmarks:
-            y_test[i] = ''
+    if not DEBUG_VALIDATION:
+        for i, image in enumerate(x_test):
+            if image in non_landmarks:
+                y_test[i] = ''
 
-    print("generating submission file")
-    df = pd.DataFrame({"id": x_test, "landmarks": y_test})
-    os.makedirs(os.path.dirname(result_csv), exist_ok=True)
-    df.to_csv(result_csv, index=False)
+        print("generating submission file")
+        df = pd.DataFrame({"id": x_test, "landmarks": y_test})
+        os.makedirs(os.path.dirname(result_csv), exist_ok=True)
+        df.to_csv(result_csv, index=False)

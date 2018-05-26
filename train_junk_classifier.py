@@ -21,8 +21,9 @@ IMAGE_SIZE = 250        # test set now uses resolution 256x256
 
 def load_pics_from_dir(path: str) -> NpArray:
     """ Reads all images from the directory. """
-    def load(img: NpArray) -> NpArray:
-        return resize(imread(img), (IMAGE_SIZE, IMAGE_SIZE))
+    def load(path: NpArray) -> NpArray:
+        img = imread(path)
+        return resize(img, (IMAGE_SIZE, IMAGE_SIZE))
 
     print("reading %s" % path)
     res = np.array([load(img) for img in tqdm(glob(os.path.join(path, "*.jpg")))])
@@ -35,11 +36,21 @@ if __name__ == "__main__":
 
     x = np.concatenate((positives, negatives), axis=0)
     y = np.concatenate(([1] * positives.shape[0], [0] * negatives.shape[0]), axis=0)
-
-    x -= np.mean(x)
-    x = x / np.std(x)
+    print(y)
+    print(y.shape)
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+    print("y_train")
+    print(np.mean(y_train))
+    print("y_test")
+    print(np.mean(y_test))
+
+    mean, std = np.mean(x_train), np.std(x_train)
+    print("mean=%f std=%f" % (mean, std))
+    x_train -= mean
+    x_train = x_train / std
+    x_test -= mean
+    x_test = x_test / std
 
     print('x_train shape:', x_train.shape)
     print('x_test shape:', x_test.shape)
@@ -77,7 +88,7 @@ if __name__ == "__main__":
     cb = [
         ModelCheckpoint("models/no_class.epoch_{epoch:02d}-acc_{val_acc:.4f}.hdf5",
                         monitor='val_acc', save_best_only=True),
-        ReduceLROnPlateau(patience=3, factor=0.5, min_lr=1e-5, verbose=1),
+        ReduceLROnPlateau(patience=2, factor=0.5, min_lr=1e-5, verbose=1),
         CSVLogger("models/training_no_class_log.csv")
     ]
 
