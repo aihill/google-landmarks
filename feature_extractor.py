@@ -10,8 +10,9 @@ import torch.nn as nn
 #import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
-from torch.autograd import Variable
+from torch.autograd import Variable, set_grad_enabled
 import torch.backends.cudnn as cudnn
+import torch.nn.functional as F
 
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -48,9 +49,9 @@ timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 opt = edict()
 
 opt.MODEL = edict()
-opt.MODEL.ARCH = 'densenet121'
+opt.MODEL.ARCH = 'densenet169'
 opt.MODEL.PRETRAINED = True
-opt.MODEL.IMAGE_SIZE = 256
+# opt.MODEL.IMAGE_SIZE = 256
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
@@ -64,8 +65,8 @@ opt.LOG.LOG_FILE = osp.join(opt.EXPERIMENT.DIR, 'log_{}.txt'.format(opt.EXPERIME
 opt.TEST = edict()
 opt.TEST.CHECKPOINT = 'experiments/feature_extractor.pk'
 opt.TEST.WORKERS = 12
-opt.TEST.BATCH_SIZE = 32
-opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'pred.npz')
+opt.TEST.BATCH_SIZE = 128
+opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'features_%s_%d.npz')
 
 opt.DATASET = 'recognition'
 
@@ -91,26 +92,12 @@ DATA_INFO = cfg.DATASETS[opt.DATASET.upper()]
 
 # Data-loader of testing set
 transform_test = transforms.Compose([
-    transforms.Resize((opt.MODEL.IMAGE_SIZE)),
+    # transforms.Resize((opt.MODEL.IMAGE_SIZE)),
     transforms.CenterCrop(opt.MODEL.INPUT_SIZE),
     transforms.ToTensor(),
     transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],
                           std = [ 0.229, 0.224, 0.225 ]),
 ])
-
-train_dataset = datasets.ImageFolder(DATA_INFO.TRAIN_DIR, transform_test)
-test_dataset = datasets.ImageFolder(DATA_INFO.TEST_DIR, transform_test)
-
-logger.info('{} images are found for train'.format(len(train_dataset.imgs)))
-logger.info('{} images are found for test'.format(len(test_dataset.imgs)))
-
-test_list = pd.read_csv(osp.join(DATA_INFO.ROOT_DIR, 'test.csv'))
-test_list = test_list['id']
-logger.info('{} images are expected for test'.format(len(test_list)))
-
-test_loader = torch.utils.data.DataLoader(
-    test_dataset, batch_size=opt.TEST.BATCH_SIZE, shuffle=False, num_workers=opt.TEST.WORKERS)
-
 
 # create model
 if opt.MODEL.PRETRAINED:
@@ -120,70 +107,77 @@ else:
     raise NotImplementedError
 
 
-# if opt.MODEL.ARCH.startswith('resnet'):
-#     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
-#     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-#     model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
-#     model = torch.nn.DataParallel(model).cuda()
-# elif opt.MODEL.ARCH.startswith('densenet'):
-#     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
-#     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-#     model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
-#     model = torch.nn.DataParallel(model).cuda()
-# else:
-#     raise NotImplementedError
-
-model_layers = list(model.module.children())
-model_layers.pop()
-model = nn.Sequential(*model_layers).cuda()
-
+if opt.MODEL.ARCH.startswith('resnet'):
+    assert(opt.MODEL.INPUT_SIZE % 32 == 0)
+    model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
+    model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
+    model = torch.nn.DataParallel(model).cuda()
+elif opt.MODEL.ARCH.startswith('densenet'):
+    assert(opt.MODEL.INPUT_SIZE % 32 == 0)
+    model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
+    model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
+    model = torch.nn.DataParallel(model).cuda()
+else:
+    raise NotImplementedError
 
 last_checkpoint = torch.load(opt.TEST.CHECKPOINT)
 assert(last_checkpoint['arch']==opt.MODEL.ARCH)
 model.module.load_state_dict(last_checkpoint['state_dict'])
 logger.info("Checkpoint '{}' was loaded.".format(opt.TEST.CHECKPOINT))
 
+extractor = nn.Sequential(model.module.features).cuda()
 
-
-vis = visdom.Visdom(port=opt.VISDOM.PORT)
-vis.close()
-vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
-
-
-softmax = torch.nn.Softmax(dim=1).cuda()
-
-# pred_indices = []
-# pred_scores = []
-# pred_confs = []
+# vis = visdom.Visdom(port=opt.VISDOM.PORT)
+# vis.close()
+# vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 model.eval()
+extractor.eval()
+set_grad_enabled(False)
 
-# FIXME: I probably can't afford keeping 2048*1M floats in memory, can I?
+def extract_features(dataset, name):
+    # Don't create files with size 2048*1M floats = 8Gb, let's split them into groups.
+    group_max_size = 125000
+    max_batches = group_max_size // opt.TEST.BATCH_SIZE
+    images = [osp.basename(image) for image, _ in dataset.imgs]
 
-for i, (input, target) in enumerate(tqdm(test_loader)):
-    target = target.cuda(async=True)
-    input_var = Variable(input, volatile=True)
+    data_loader = torch.utils.data.DataLoader(
+        dataset, batch_size=opt.TEST.BATCH_SIZE, shuffle=False, num_workers=opt.TEST.WORKERS)
 
-    # compute output
-    output = model(input_var)
-    # top_scores, top_indices = torch.topk(output, k=20)
-    # top_indices = top_indices.data.cpu().numpy()
-    # top_scores = top_scores.data.cpu().numpy()
+    group = []
+    base = 0
+    group_idx = 0
 
-    # confs = softmax(output)
-    # top_confs, _ = torch.topk(confs, k=20)
-    # top_confs = top_confs.data.cpu().numpy()
-    #
-    # pred_indices.append(top_indices)
-    # pred_scores.append(top_scores)
-    # pred_confs.append(top_confs)
+    for i, (input, target) in enumerate(tqdm(data_loader)):
+        # compute output
+        # print("got input: ", input.shape)
+        output = extractor(input.cuda())
 
-# pred_indices = np.concatenate(pred_indices)
-# pred_scores = np.concatenate(pred_scores)
-# pred_confs = np.concatenate(pred_confs)
+        features = output.data
+        features = F.relu(features, inplace=True)
+        features = F.avg_pool2d(features, kernel_size=7, stride=1).view(features.size(0), -1)
+        features = features.cpu().numpy()
 
-images = [osp.basename(image) for image, _ in test_dataset.imgs]
+        # print("got features: ", features.shape)
+        group.append(features)
 
-np.savez(opt.TEST.OUTPUT, pred_indices=pred_indices, pred_scores=pred_scores,
-         pred_confs=pred_confs, images=images, checkpoint=opt.TEST.CHECKPOINT)
-logger.info("Results were saved to '{}'.".format(opt.TEST.OUTPUT))
+        if len(group) >= max_batches:
+            features = np.concatenate(group)
+            print("dumping features: ", features.shape)
+
+            images_subset = images[base * opt.TEST.BATCH_SIZE : (i+1)*opt.TEST.BATCH_SIZE]
+            filename = opt.TEST.OUTPUT % (name, group_idx)
+            np.savez(filename, images=images_subset, features=features)
+            logger.info("results were saved to " + filename)
+
+            group = []
+            base = i + 1
+            group_idx += 1
+
+categories_dataset = datasets.ImageFolder(DATA_INFO.TRAIN_DIR, transform_test)
+logger.info('{} images are found for categories'.format(len(categories_dataset.imgs)))
+extract_features(categories_dataset, "train")
+
+queries_dataset = datasets.ImageFolder(DATA_INFO.TEST_DIR, transform_test)
+logger.info('{} images are found for queries'.format(len(queries_dataset.imgs)))
+extract_features(queries_dataset, "test")
