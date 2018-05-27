@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 from easydict import EasyDict as edict
@@ -33,9 +34,6 @@ __C.DATASETS.RETRIEVAL.TRAIN_DIR = osp.join(__C.DATASETS.RETRIEVAL.ROOT_DIR, 'tr
 __C.DATASETS.RETRIEVAL.TEST_DIR = osp.join(__C.DATASETS.RETRIEVAL.ROOT_DIR, 'test')
 __C.DATASETS.RECOGNITION.NUM_CLASSES = 14951         # For compatibility
 
-
-
-import logging
 
 def create_logger(filename, logger_name='logger',
                   file_fmt='%(asctime)s %(levelname)-8s: %(message)s',

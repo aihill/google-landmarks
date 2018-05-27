@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
+""" Calculates a feature vector for every image from both train and test sets. """
 __version__ = '0.3.17'
-# type: ignore
 
 import os
 import os.path as osp
@@ -10,7 +10,7 @@ import torch.nn as nn
 #import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
-from torch.autograd import Variable, set_grad_enabled
+from torch.autograd import set_grad_enabled
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 
