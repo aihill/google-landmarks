@@ -63,7 +63,16 @@ def find_landmarks(test_vectors: PTArray, best_indices: PTArray, best_distances:
 
     return best_indices, best_distances
 
-def process_all_files() -> None:
+if __name__ == "__main__":
+    if not osp.exists(opt.EXPERIMENT.DIR):
+        os.makedirs(opt.EXPERIMENT.DIR)
+
+    logger = create_logger(opt.LOG.LOG_FILE)    # type: ignore
+    logger.info('\n\nOptions:')
+    logger.info(pprint.pformat(opt))
+
+    set_grad_enabled(False)
+
     """ Iterates through all train files. """
     test_data = np.load(osp.join(opt.FEATURES.DIR, "features_test_0.npz"))
     test_names, test_vectors = test_data["images"], test_data["features"]
@@ -103,14 +112,3 @@ def process_all_files() -> None:
     best_distances = best_distances.cpu().numpy()
     best_indices = np.vectorize(lambda i: all_landmark_names[i])(best_indices)
     np.savez(opt.EXPERIMENT.OUTPUT, indices=best_indices, distances=best_distances)
-
-if __name__ == "__main__":
-    if not osp.exists(opt.EXPERIMENT.DIR):
-        os.makedirs(opt.EXPERIMENT.DIR)
-
-    logger = create_logger(opt.LOG.LOG_FILE)    # type: ignore
-    logger.info('\n\nOptions:')
-    logger.info(pprint.pformat(opt))
-
-    set_grad_enabled(False)
-    process_all_files()
