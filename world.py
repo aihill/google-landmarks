@@ -32,7 +32,7 @@ __C.DATASETS.RETRIEVAL = edict()
 __C.DATASETS.RETRIEVAL.ROOT_DIR = osp.join(__C.ROOT_DIR, 'retrieval')
 __C.DATASETS.RETRIEVAL.TRAIN_DIR = osp.join(__C.DATASETS.RETRIEVAL.ROOT_DIR, 'train')
 __C.DATASETS.RETRIEVAL.TEST_DIR = osp.join(__C.DATASETS.RETRIEVAL.ROOT_DIR, 'test')
-__C.DATASETS.RECOGNITION.NUM_CLASSES = 14951         # For compatibility
+__C.DATASETS.RETRIEVAL.NUM_CLASSES = 14951         # For compatibility
 
 
 def create_logger(filename, logger_name='logger',
