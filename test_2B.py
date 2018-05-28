@@ -6,7 +6,6 @@ import os.path as osp
 
 import torch
 import torch.nn as nn
-#import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.autograd import Variable

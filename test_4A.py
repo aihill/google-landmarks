@@ -22,6 +22,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from world import cfg, create_logger, AverageMeter, accuracy
+import pretrainedmodels
 
 
 
@@ -36,13 +37,13 @@ timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 opt = edict()
 
 opt.MODEL = edict()
-opt.MODEL.ARCH = 'densenet169'
+opt.MODEL.ARCH = 'se_resnext50_32x4d'
 opt.MODEL.PRETRAINED = True
 opt.MODEL.IMAGE_SIZE = 256
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = '3B'
+opt.EXPERIMENT.CODENAME = '4A'
 opt.EXPERIMENT.TASK = 'test'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -97,38 +98,27 @@ test_loader = torch.utils.data.DataLoader(
 # create model
 if opt.MODEL.PRETRAINED:
     logger.info("=> using pre-trained model '{}'".format(opt.MODEL.ARCH ))
-    model = models.__dict__[opt.MODEL.ARCH](pretrained=True)
+    model = pretrainedmodels.__dict__[opt.MODEL.ARCH](pretrained='imagenet')
+    model.eval()
 else:
     raise NotImplementedError
 
 
-if opt.MODEL.ARCH.startswith('resnet'):
+if opt.MODEL.ARCH.startswith('se'):
     assert(opt.MODEL.INPUT_SIZE % 32 == 0)
     model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-    #model.avgpool = nn.AdaptiveAvgPool2d(1)
-    model.fc = nn.Linear(model.fc.in_features, DATA_INFO.NUM_CLASSES)
-    model = torch.nn.DataParallel(model).cuda()
-elif opt.MODEL.ARCH.startswith('densenet'):
-    assert(opt.MODEL.INPUT_SIZE % 32 == 0)
-    model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-    model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
+    model.last_linear = nn.Linear(model.last_linear.in_features, DATA_INFO.NUM_CLASSES)
     model = torch.nn.DataParallel(model).cuda()
 else:
     raise NotImplementedError
-    model = torch.nn.DataParallel(model).cuda()
+
+model = torch.nn.DataParallel(model).cuda()
 
 
 last_checkpoint = torch.load(opt.TEST.CHECKPOINT)
 assert(last_checkpoint['arch']==opt.MODEL.ARCH)
 model.module.load_state_dict(last_checkpoint['state_dict'])
 logger.info("Checkpoint '{}' was loaded.".format(opt.TEST.CHECKPOINT))
-
-last_epoch = last_checkpoint['epoch']
-
-
-# vis = visdom.Visdom(port=opt.VISDOM.PORT)
-# vis.close()
-# vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 
 softmax = torch.nn.Softmax(dim=1).cuda()

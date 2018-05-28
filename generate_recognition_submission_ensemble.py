@@ -46,7 +46,7 @@ def merge_results(all_classes: List[NpArray], all_confidences: List[NpArray],
 if __name__ == "__main__":
     predictions = [
         "experiments/3B/pred.npz",
-        "experiments/3A/pred.npz"
+        "experiments/4A/pred.npz"
         ]
 
     image_list: List[str] = []

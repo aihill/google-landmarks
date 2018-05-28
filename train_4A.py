@@ -195,34 +195,34 @@ test_losses = []
 test_top1s = []
 
 
-def visualize():
-
-    X = np.array(range(len(train_losses))) + 1 + last_epoch
-    vis.line(
-        X=np.column_stack((X, X)),
-        Y=np.column_stack((train_losses, test_losses)),
-        win=1,
-        env=opt.VISDOM.ENV,
-        opts={
-                'title': 'loss over time',
-                'xlabel': 'epoch',
-                'ylabel': 'loss' ,
-                'legend': ['train','test']
-        }
-    )
-
-    vis.line(
-        X=np.column_stack((X, X)),
-        Y=np.column_stack((train_top1s, test_top1s)),
-        win=2,
-        env=opt.VISDOM.ENV,
-        opts={
-                'title': 'accuracy over time',
-                'xlabel': 'epoch',
-                'ylabel': 'accuracy (%)' ,
-                'legend': ['train','test']
-        }
-    )
+# def visualize():
+#
+#     X = np.array(range(len(train_losses))) + 1 + last_epoch
+#     vis.line(
+#         X=np.column_stack((X, X)),
+#         Y=np.column_stack((train_losses, test_losses)),
+#         win=1,
+#         env=opt.VISDOM.ENV,
+#         opts={
+#                 'title': 'loss over time',
+#                 'xlabel': 'epoch',
+#                 'ylabel': 'loss' ,
+#                 'legend': ['train','test']
+#         }
+#     )
+#
+#     vis.line(
+#         X=np.column_stack((X, X)),
+#         Y=np.column_stack((train_top1s, test_top1s)),
+#         win=2,
+#         env=opt.VISDOM.ENV,
+#         opts={
+#                 'title': 'accuracy over time',
+#                 'xlabel': 'epoch',
+#                 'ylabel': 'accuracy (%)' ,
+#                 'legend': ['train','test']
+#         }
+#     )
 
 def save_checkpoint(state, filename='checkpoint.pk'):
     torch.save(state, osp.join(opt.EXPERIMENT.DIR, filename))
@@ -363,8 +363,8 @@ for epoch in range(last_epoch+1, opt.TRAIN.EPOCHS+1):
             'optimizer' : optimizer.state_dict(),
         }, 'best_model.pk')
 
-        vis.text('Best accuracy: {} (Epoch {})'.format(prec1, epoch), win=0, env=opt.VISDOM.ENV)
-    visualize()
+        # vis.text('Best accuracy: {} (Epoch {})'.format(prec1, epoch), win=0, env=opt.VISDOM.ENV)
+    # visualize()
 
 
 logger.info('Best accuracy for single crop: {:.02f}%'.format(best_prec1))
