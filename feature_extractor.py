@@ -4,6 +4,7 @@ __version__ = '0.3.17'
 
 import os
 import os.path as osp
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -135,7 +136,7 @@ model.eval()
 extractor.eval()
 set_grad_enabled(False)
 
-def extract_features(dataset, name):
+def extract_features(dataset: Any, name: str) -> None:
     # Don't create files with size 2048*1M floats = 8Gb, let's split them into groups.
     group_max_size = 125000
     max_batches = group_max_size // opt.TEST.BATCH_SIZE

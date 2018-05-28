@@ -5,29 +5,17 @@ from typing import *
 from collections import defaultdict
 import os, os.path as osp
 import numpy as np,  pandas as pd       # type: ignore
-from easydict import EasyDict as edict          # type: ignore
-from world import cfg, create_logger
 
 NpArray = Any
-opt = edict()
 
-opt.FEATURES = edict()
-opt.FEATURES.CODENAME = 'feature_extractor'
-opt.FEATURES.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.FEATURES.CODENAME)
-opt.FEATURES.TEST = osp.join(opt.FEATURES.DIR, 'features_test_0.npz')
-
-opt.RETRIEVAL = edict()
-opt.RETRIEVAL.CODENAME = 'retrieval'
-opt.RETRIEVAL.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.RETRIEVAL.CODENAME)
-opt.RETRIEVAL.DISTANCES = osp.join(opt.RETRIEVAL.DIR, 'distances.npz')
-
-opt.TEST = edict()
-opt.TEST.CSV = "retrieval/test.csv"
+FEATURES_TEST_FILE          = "experiments/feature_extractor/features_test_0.npz"
+RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
+TEST_CSV                    = "retrieval/test.csv"
 
 EPSILON = 0.2
 
 if __name__ == "__main__":
-    distances = np.load(opt.RETRIEVAL.DISTANCES)
+    distances = np.load(RETRIEVAL_DISTANCES_FILE)
     print(distances)
 
     landmarks = np.transpose(distances["indices"])
@@ -37,7 +25,7 @@ if __name__ == "__main__":
     print("distances", distances.shape)
     print(distances)
 
-    test_classes = np.load(opt.FEATURES.TEST)
+    test_classes = np.load(FEATURES_TEST_FILE)
     print(test_classes)
 
     images = test_classes["images"]
@@ -56,7 +44,7 @@ if __name__ == "__main__":
 
     print("len(data)", len(data))
 
-    csv_data = pd.read_csv(opt.TEST.CSV)
+    csv_data = pd.read_csv(TEST_CSV)
     x_test = csv_data["id"].tolist()
     print("len(x_test)", len(x_test))
     print()
