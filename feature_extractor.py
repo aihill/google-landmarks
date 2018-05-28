@@ -69,7 +69,7 @@ opt.TEST.WORKERS = 12
 opt.TEST.BATCH_SIZE = 128
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'features_%s_%d.npz')
 
-opt.DATASET = 'recognition'
+opt.DATASET = 'retrieval'
 
 opt.VISDOM = edict()
 opt.VISDOM.PORT = 8097

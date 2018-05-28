@@ -3,8 +3,9 @@
 
 from typing import *
 from collections import defaultdict
-import os, os.path as osp
+import os, os.path as osp, shutil
 import numpy as np,  pandas as pd       # type: ignore
+from tqdm import tqdm                   # type: ignore
 
 NpArray = Any
 
@@ -12,6 +13,7 @@ FEATURES_TEST_FILE          = "experiments/feature_extractor/features_test_0.npz
 RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
 TEST_CSV                    = "retrieval/test.csv"
 
+ENABLE_DEBUGGING = True
 EPSILON = 0.2
 
 if __name__ == "__main__":
@@ -37,8 +39,29 @@ if __name__ == "__main__":
 
     data: DefaultDict[str, str] = defaultdict(str)
 
-    for img, candidates, dists in zip(images, landmarks, distances):
+    if ENABLE_DEBUGGING:
+        root_dir = osp.abspath(osp.dirname(__file__)) + "/"
+        debug_dir = root_dir + "experiments/debug/"
+        shutil.rmtree(debug_dir)
+        os.makedirs(debug_dir)
+
+    all = list(zip(images, landmarks, distances))
+
+    for img, candidates, dists in tqdm(all):
         pairs = sorted(zip(candidates, dists), key=lambda pair: pair[1], reverse=True)
+
+        if ENABLE_DEBUGGING:
+            directory = debug_dir + img + "/"
+            os.makedirs(directory, exist_ok=True)
+            os.symlink(root_dir + "retrieval/test/fakeclass/" + img + ".jpg",
+                       directory + "original.jpg")
+
+            for lm, dist in pairs[:10]:
+                lm = os.path.splitext(lm)[0]
+                # os.symlink(root_dir + "retrieval/train/fakeclass/" + lm + ".jpg",
+                os.symlink(root_dir + "data/train/" + lm + ".jpg",
+                           directory + lm + "_" + str(dist) + ".jpg")
+
         L = [os.path.splitext(lm)[0] for lm, d in pairs if d < EPSILON]
         data[img] = " ".join(L)
 

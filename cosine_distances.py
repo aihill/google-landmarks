@@ -11,7 +11,7 @@ from tqdm import tqdm                           # type: ignore
 
 PTArray = Any
 
-FEATURES_DIR              = "experiments/feature_extractor/"
+FEATURES_DIR                = "experiments/feature_extractor/"
 FEATURES_TEST_FILE          = FEATURES_DIR + "features_test_0.npz"
 RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
 
