@@ -146,8 +146,8 @@ for i, (input, target) in enumerate(tqdm(test_loader)):
     crops.append(input[:, :, 0 : opt.MODEL.INPUT_SIZE, -opt.MODEL.INPUT_SIZE :])
     crops.append(input[:, :, opt.MODEL.IMAGE_SIZE - opt.MODEL.INPUT_SIZE :, opt.MODEL.IMAGE_SIZE - opt.MODEL.INPUT_SIZE :])
 
-    best_classes = np.zeros((opt.TEST.BATCH_SIZE, K), dtype=int)
-    best_confs = np.zeros((opt.TEST.BATCH_SIZE, K), dtype=float)
+    best_classes = -np.ones((input.shape[0], K), dtype=int)
+    best_confs = np.zeros((input.shape[0], K), dtype=float)
     best_conf = 0
 
     for crop in crops:
@@ -160,8 +160,8 @@ for i, (input, target) in enumerate(tqdm(test_loader)):
         top_confs, _ = torch.topk(confs, k=K)
         top_confs = top_confs.data.cpu().numpy()
 
-        # select classes where we are most confident
-        for i in range(opt.TEST.BATCH_SIZE):
+        # for every sample in batch, select classes in which we are most confident
+        for i in range(best_confs.shape[0]):
             if top_confs[i, 0] > best_confs[i, 0]:
                 best_confs[i, :]    = top_confs[i, :]
                 best_classes[i, :]  = top_classes[i, :]
