@@ -4,6 +4,6 @@ retrieval
 data
 __pycache__
 models
-submissions
+submissions_recognition
 submissions_retrieval
 no_class

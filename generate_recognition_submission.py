@@ -61,5 +61,5 @@ if __name__ == "__main__":
             values[i] = predictions[image]
 
     df = pd.DataFrame({"id": x_test, "landmarks": values})
-    os.makedirs("submissions/", exist_ok=True)
-    df.to_csv("submissions/prediction.csv", index=False)
+    os.makedirs("submissions_recognition/", exist_ok=True)
+    df.to_csv("submissions_recognition/prediction.csv", index=False)

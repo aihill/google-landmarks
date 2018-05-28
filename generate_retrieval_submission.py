@@ -24,7 +24,7 @@ opt.RETRIEVAL.DISTANCES = osp.join(opt.RETRIEVAL.DIR, 'distances.npz')
 opt.TEST = edict()
 opt.TEST.CSV = "retrieval/test.csv"
 
-EPSILON = 0.5
+EPSILON = 0.2
 
 if __name__ == "__main__":
     distances = np.load(opt.RETRIEVAL.DISTANCES)
@@ -50,8 +50,11 @@ if __name__ == "__main__":
     data: DefaultDict[str, str] = defaultdict(str)
 
     for img, candidates, dists in zip(images, landmarks, distances):
-        L = [os.path.splitext(lm)[0] for lm, d in zip(candidates, dists) if d < EPSILON]
+        pairs = sorted(zip(candidates, dists), key=lambda pair: pair[1], reverse=True)
+        L = [os.path.splitext(lm)[0] for lm, d in pairs if d < EPSILON]
         data[img] = " ".join(L)
+
+    print("len(data)", len(data))
 
     csv_data = pd.read_csv(opt.TEST.CSV)
     x_test = csv_data["id"].tolist()
