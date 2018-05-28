@@ -64,11 +64,11 @@ opt.TRAIN.PRINT_FREQ = 20
 opt.TRAIN.SEED = None
 opt.TRAIN.LEARNING_RATE = 1e-4
 opt.TRAIN.LR_GAMMA = 0.5
-opt.TRAIN.LR_MILESTONES = [5, 7, 9, 10, 11, 12]
+opt.TRAIN.LR_MILESTONES = [4, 6, 8, 9, 10, 11]
 opt.TRAIN.EPOCHS = 12
-opt.TRAIN.VAL_SUFFIX = '7c'
+opt.TRAIN.VAL_SUFFIX = '7'
 opt.TRAIN.SAVE_FREQ = 1
-opt.TRAIN.RESUME = None
+opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, "best_model.pk")
 
 opt.DATASET = 'recognition'
 
