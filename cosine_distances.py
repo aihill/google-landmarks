@@ -42,7 +42,7 @@ def find_landmarks(test_vectors: PTArray, best_indices: PTArray, best_distances:
         # print(joint_distances.shape, joint_indices.shape)
 
         # both sizes are (100, 115k)
-        best_distances, indices = torch.topk(joint_distances, k=K, dim=0, largest=False)
+        best_distances, indices = torch.topk(joint_distances, k=K, dim=0)
         # print(best_distances.shape, indices.shape)
 
         # size (100, 115k)
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     all_landmark_names: List[str] = []
     num_test_samples = test_vectors.shape[1]
     best_indices = torch.zeros(K, num_test_samples, dtype=torch.int).cuda(async=True)
-    best_distances = torch.ones(K, num_test_samples, dtype=torch.float).cuda(async=True)
+    best_distances = torch.zeros(K, num_test_samples, dtype=torch.float).cuda(async=True)
 
     # test
     for fragment in glob(osp.join(FEATURES_DIR, "features_train_*.npz")):

@@ -14,9 +14,10 @@ RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
 TEST_CSV                    = "retrieval/test.csv"
 
 ENABLE_DEBUGGING = True
-EPSILON = 0.2
+EPSILON = 1.0
 
 if __name__ == "__main__":
+    np.set_printoptions(linewidth=200)
     distances = np.load(RETRIEVAL_DISTANCES_FILE)
     print(distances)
 
@@ -42,13 +43,15 @@ if __name__ == "__main__":
     if ENABLE_DEBUGGING:
         root_dir = osp.abspath(osp.dirname(__file__)) + "/"
         debug_dir = root_dir + "experiments/debug/"
+        print("removing old debug data")
         shutil.rmtree(debug_dir)
         os.makedirs(debug_dir)
 
+    print("analyzing all test cases")
     all = list(zip(images, landmarks, distances))
 
     for img, candidates, dists in tqdm(all):
-        pairs = sorted(zip(candidates, dists), key=lambda pair: pair[1], reverse=True)
+        pairs = sorted(zip(candidates, dists), key=lambda pair: pair[1])
 
         if ENABLE_DEBUGGING:
             directory = debug_dir + img + "/"
@@ -57,10 +60,10 @@ if __name__ == "__main__":
                        directory + "original.jpg")
 
             for lm, dist in pairs[:10]:
-                lm = os.path.splitext(lm)[0]
-                # os.symlink(root_dir + "retrieval/train/fakeclass/" + lm + ".jpg",
-                os.symlink(root_dir + "data/train/" + lm + ".jpg",
-                           directory + lm + "_" + str(dist) + ".jpg")
+                if dist < EPSILON:
+                    lm = os.path.splitext(lm)[0]
+                    os.symlink(root_dir + "retrieval/train/fakeclass/" + lm + ".jpg",
+                               directory + lm + "_" + str(dist) + ".jpg")
 
         L = [os.path.splitext(lm)[0] for lm, d in pairs if d < EPSILON]
         data[img] = " ".join(L)
