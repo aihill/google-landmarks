@@ -83,7 +83,6 @@ if __name__ == "__main__":
         data[name] = value
 
     x_test = load_test_data("recognition/test.csv")
-
     values = [""] * len(x_test)
 
     for i, image in enumerate(x_test):

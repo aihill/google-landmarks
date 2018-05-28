@@ -148,7 +148,6 @@ for i, (input, target) in enumerate(tqdm(test_loader)):
 
     best_classes = -np.ones((input.shape[0], K), dtype=int)
     best_confs = np.zeros((input.shape[0], K), dtype=float)
-    best_conf = 0
 
     for crop in crops:
         # compute output

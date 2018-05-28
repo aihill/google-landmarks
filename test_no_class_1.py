@@ -146,7 +146,7 @@ vis = visdom.Visdom(port=opt.VISDOM.PORT)
 vis.close()
 vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
-
+# FIXME: binary classifier does not need Softmax and categorical output
 softmax = torch.nn.Softmax(dim=1).cuda()
 
 pred_indices = []
