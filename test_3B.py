@@ -5,8 +5,6 @@ import os
 import os.path as osp
 
 import torch
-import torch.nn as nn
-#import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.autograd import Variable
@@ -17,20 +15,10 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 
 #import argparse
-import visdom
-import logging
-import numpy as np
-import random
-import time
-import datetime
-import pprint
+import visdom, logging, numpy as np, random, time, datetime, pprint
 from easydict import EasyDict as edict
 import pandas as pd
 from tqdm import tqdm
-
-import matplotlib
-#matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 from world import cfg, create_logger, AverageMeter, accuracy
 
@@ -73,12 +61,8 @@ opt.VISDOM.PORT = 8097
 opt.VISDOM.ENV = '[' + opt.DATASET + ']' + opt.EXPERIMENT.CODENAME
 
 
-
-
 if not osp.exists(opt.EXPERIMENT.DIR):
     os.makedirs(opt.EXPERIMENT.DIR)
-
-
 
 
 logger = create_logger(opt.LOG.LOG_FILE)
@@ -115,8 +99,6 @@ if opt.MODEL.PRETRAINED:
     model = models.__dict__[opt.MODEL.ARCH](pretrained=True)
 else:
     raise NotImplementedError
-#    logger.info("=> creating model '{}'".format(args.arch))
-#    model = models.__dict__[opt.MODEL.ARCH]()
 
 
 if opt.MODEL.ARCH.startswith('resnet'):
@@ -135,21 +117,17 @@ else:
     model = torch.nn.DataParallel(model).cuda()
 
 
-
 last_checkpoint = torch.load(opt.TEST.CHECKPOINT)
 assert(last_checkpoint['arch']==opt.MODEL.ARCH)
 model.module.load_state_dict(last_checkpoint['state_dict'])
-#optimizer.load_state_dict(last_checkpoint['optimizer'])
 logger.info("Checkpoint '{}' was loaded.".format(opt.TEST.CHECKPOINT))
 
 last_epoch = last_checkpoint['epoch']
-    #logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
-
-vis = visdom.Visdom(port=opt.VISDOM.PORT)
-vis.close()
-vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
+# vis = visdom.Visdom(port=opt.VISDOM.PORT)
+# vis.close()
+# vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 
 softmax = torch.nn.Softmax(dim=1).cuda()

@@ -16,7 +16,6 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from sorted_folder import ImageFolder as SortedFolder
-#import argparse
 import visdom
 import logging
 import numpy as np
@@ -27,7 +26,6 @@ import pprint
 from easydict import EasyDict as edict
 
 import matplotlib
-#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from world import cfg, create_logger, AverageMeter, accuracy
@@ -186,11 +184,9 @@ else:
     logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
-
-
-vis = visdom.Visdom(port=opt.VISDOM.PORT)
-vis.close()
-vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
+# vis = visdom.Visdom(port=opt.VISDOM.PORT)
+# vis.close()
+# vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 
 train_losses = []

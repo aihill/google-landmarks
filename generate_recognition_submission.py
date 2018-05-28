@@ -29,14 +29,11 @@ if __name__ == "__main__":
     print(data)
 
     pred_indices = data["pred_indices"]
-    pred_scores = data["pred_scores"]
     images = data["images"]
     confidences = data["pred_confs"]
 
     print("pred_indices", pred_indices.shape)
     print(pred_indices)
-    print("pred_scores", pred_scores.shape)
-    print(pred_scores)
     print("images", images.shape)
     print(images)
     print("confidences", confidences.shape)
