@@ -42,11 +42,7 @@ if __name__ == "__main__":
     print(distances)
 
     test_classes = np.load(FEATURES_TEST_FILE)
-    print(test_classes)
-
     images = test_classes["images"]
-    features = test_classes["features"]
-
     print("images", images.shape)
     print(images)
     images = [os.path.splitext(name)[0] for name in images]
