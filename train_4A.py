@@ -64,7 +64,7 @@ opt.TRAIN.LEARNING_RATE = 1e-4
 opt.TRAIN.LR_GAMMA = 0.5
 opt.TRAIN.LR_MILESTONES = [4, 6, 8, 9, 10, 11]
 opt.TRAIN.EPOCHS = 8
-opt.TRAIN.VAL_SUFFIX = '7'
+opt.TRAIN.VAL_SUFFIX = '07'
 opt.TRAIN.SAVE_FREQ = 1
 opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, "best_model.pk")
 
@@ -126,9 +126,12 @@ val_dataset = SortedFolder(DATA_INFO.TRAIN_DIR, transform_val)
 assert(len(train_dataset.classes) == DATA_INFO.NUM_CLASSES)
 logger.info('{} images are found for train_val'.format(len(train_dataset.imgs)))
 
-train_imgs = [(img, target) for (img, target) in train_dataset.imgs if not img[-5] in opt.TRAIN.VAL_SUFFIX]
+def is_test(img: str) -> bool:
+    return img.endswith(opt.TRAIN.VAL_SUFFIX + ".jpg")
+
+train_imgs = [(img, target) for (img, target) in train_dataset.imgs if not is_test(img)]
 logger.info('{} images are used to train'.format(len(train_imgs)))
-val_imgs = [(img, target) for (img, target) in train_dataset.imgs if img[-5] in opt.TRAIN.VAL_SUFFIX]
+val_imgs = [(img, target) for (img, target) in train_dataset.imgs if is_test(img)]
 logger.info('{} images are used to val'.format(len(val_imgs)))
 
 
