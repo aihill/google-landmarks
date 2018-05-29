@@ -16,7 +16,6 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from sorted_folder import ImageFolder as SortedFolder
-#import argparse
 import visdom
 import logging
 import numpy as np
@@ -27,17 +26,13 @@ import pprint
 from easydict import EasyDict as edict
 
 import matplotlib
-#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from world import cfg, create_logger, AverageMeter, accuracy
+import pretrainedmodels
 
 
-
-model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
-    and callable(models.__dict__[name]))
-print(model_names)
+print(pretrainedmodels.model_names)
 
 cudnn.benchmark = True
 
@@ -46,13 +41,15 @@ timestamp = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
 opt = edict()
 
 opt.MODEL = edict()
-opt.MODEL.ARCH = 'densenet169'
+# opt.MODEL.ARCH = 'se_resnext101_32x4d'
+opt.MODEL.ARCH = 'resnext101_32x4d'
+# opt.MODEL.ARCH = 'se_resnet101'
 opt.MODEL.PRETRAINED = True
 opt.MODEL.IMAGE_SIZE = 250
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = '3B'
+opt.EXPERIMENT.CODENAME = '4B'
 opt.EXPERIMENT.TASK = 'finetune'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -67,11 +64,12 @@ opt.TRAIN.PRINT_FREQ = 20
 opt.TRAIN.SEED = None
 opt.TRAIN.LEARNING_RATE = 1e-4
 opt.TRAIN.LR_GAMMA = 0.5
-opt.TRAIN.LR_MILESTONES = [5, 7, 9, 12, 13, 14]
-opt.TRAIN.EPOCHS = 12
-opt.TRAIN.VAL_SUFFIX = '07'
+opt.TRAIN.LR_MILESTONES = [4, 6, 8, 9, 10, 11]
+opt.TRAIN.EPOCHS = 10
+opt.TRAIN.VAL_SUFFIX = '77'
 opt.TRAIN.SAVE_FREQ = 1
-opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, 'best_model.pk')
+# opt.TRAIN.RESUME = osp.join(opt.EXPERIMENT.DIR, "best_model.pk")
+opt.TRAIN.RESUME = None
 
 opt.DATASET = 'recognition'
 
@@ -90,8 +88,14 @@ random.seed(opt.TRAIN.SEED)
 torch.manual_seed(opt.TRAIN.SEED)
 torch.cuda.manual_seed(opt.TRAIN.SEED)
 
+
+
+
 if not osp.exists(opt.EXPERIMENT.DIR):
     os.makedirs(opt.EXPERIMENT.DIR)
+
+
+
 
 logger = create_logger(opt.LOG.LOG_FILE)
 logger.info('\n\nOptions:')
@@ -125,12 +129,9 @@ val_dataset = SortedFolder(DATA_INFO.TRAIN_DIR, transform_val)
 assert(len(train_dataset.classes) == DATA_INFO.NUM_CLASSES)
 logger.info('{} images are found for train_val'.format(len(train_dataset.imgs)))
 
-def is_test(img: str) -> bool:
-    return img.endswith(opt.TRAIN.VAL_SUFFIX + ".jpg")
-
-train_imgs = [(img, target) for (img, target) in train_dataset.imgs if not is_test(img)]
+train_imgs = [(img, target) for (img, target) in train_dataset.imgs if not img.endswith(opt.TRAIN.VAL_SUFFIX)]
 logger.info('{} images are used to train'.format(len(train_imgs)))
-val_imgs = [(img, target) for (img, target) in train_dataset.imgs if is_test(img)]
+val_imgs = [(img, target) for (img, target) in train_dataset.imgs if img.endswith(opt.TRAIN.VAL_SUFFIX)]
 logger.info('{} images are used to val'.format(len(val_imgs)))
 
 
@@ -151,22 +152,21 @@ test_loader = torch.utils.data.DataLoader(
 # create model
 if opt.MODEL.PRETRAINED:
     logger.info("=> using pre-trained model '{}'".format(opt.MODEL.ARCH ))
-    model = models.__dict__[opt.MODEL.ARCH](pretrained=True)
+    model = pretrainedmodels.__dict__[opt.MODEL.ARCH](pretrained='imagenet')
+    model.eval()
 else:
     raise NotImplementedError
-#    logger.info("=> creating model '{}'".format(args.arch))
-#    model = models.__dict__[opt.MODEL.ARCH]()
 
 
-if opt.MODEL.ARCH.startswith('densenet'):
-    assert(opt.MODEL.INPUT_SIZE % 32 == 0)
-    model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
-    #model.avgpool = nn.AdaptiveAvgPool2d(1)
-    model.classifier = nn.Linear(model.classifier.in_features, DATA_INFO.NUM_CLASSES)
-    model = torch.nn.DataParallel(model).cuda()
-else:
-    raise NotImplementedError
-    model = torch.nn.DataParallel(model).cuda()
+# if opt.MODEL.ARCH.startswith('se'):
+assert(opt.MODEL.INPUT_SIZE % 32 == 0)
+model.avgpool = nn.AvgPool2d(opt.MODEL.INPUT_SIZE // 32, stride=1)
+model.last_linear = nn.Linear(model.last_linear.in_features, DATA_INFO.NUM_CLASSES)
+model = torch.nn.DataParallel(model).cuda()
+# else:
+#     raise NotImplementedError
+
+model = torch.nn.DataParallel(model).cuda()
 
 
 optimizer = optim.Adam(model.module.parameters(), opt.TRAIN.LEARNING_RATE)
