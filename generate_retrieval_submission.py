@@ -14,7 +14,7 @@ RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
 TEST_CSV                    = "retrieval/test.csv"
 
 ENABLE_DEBUGGING = True
-EPSILON = 1.0
+EPSILON = 500
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=200)
@@ -53,14 +53,15 @@ if __name__ == "__main__":
     for img, candidates, dists in tqdm(all):
         pairs = sorted(zip(candidates, dists), key=lambda pair: pair[1])
 
-        if ENABLE_DEBUGGING:
+        if ENABLE_DEBUGGING and pairs[0][1] < EPSILON:
             directory = debug_dir + img + "/"
             os.makedirs(directory, exist_ok=True)
             os.symlink(root_dir + "retrieval/test/fakeclass/" + img + ".jpg",
                        directory + "original.jpg")
 
             for lm, dist in pairs[:10]:
-                if dist < EPSILON:
+                # if dist < EPSILON:
+                if True:
                     lm = os.path.splitext(lm)[0]
                     os.symlink(root_dir + "retrieval/train/fakeclass/" + lm + ".jpg",
                                directory + lm + "_" + str(dist) + ".jpg")

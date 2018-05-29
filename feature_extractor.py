@@ -149,8 +149,8 @@ def extract_features(dataset: Any, name: str) -> None:
         features = features.cpu().numpy()
 
         # print("got features: ", features.shape)
-        norm = np.linalg.norm(features, axis=1, keepdims=True)
-        features /= norm
+        # norm = np.linalg.norm(features, axis=1, keepdims=True)
+        # features /= norm
         group.append(features)
 
         if len(group) >= max_batches or i + 1 >= len(data_loader):
