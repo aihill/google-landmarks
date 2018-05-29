@@ -52,7 +52,7 @@ opt.MODEL.PRETRAINED = True
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = 'feature_extractor'
+opt.EXPERIMENT.CODENAME = 'feature_extractor_recognition'
 opt.EXPERIMENT.TASK = 'test'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -65,7 +65,7 @@ opt.TEST.WORKERS = 12
 opt.TEST.BATCH_SIZE = 128
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'features_%s_%d.npz')
 
-opt.DATASET = 'retrieval'
+opt.DATASET = 'recognition'
 
 opt.VISDOM = edict()
 opt.VISDOM.PORT = 8097
@@ -140,7 +140,6 @@ def extract_features(dataset: Any, name: str) -> None:
 
     for i, (input, target) in enumerate(tqdm(data_loader)):
         # compute output
-        # print("got input: ", input.shape)
         output = extractor(input.cuda())
 
         features = output.data
@@ -148,9 +147,6 @@ def extract_features(dataset: Any, name: str) -> None:
         features = F.avg_pool2d(features, kernel_size=7, stride=1).view(features.size(0), -1)
         features = features.cpu().numpy()
 
-        # print("got features: ", features.shape)
-        # norm = np.linalg.norm(features, axis=1, keepdims=True)
-        # features /= norm
         group.append(features)
 
         if len(group) >= max_batches or i + 1 >= len(data_loader):

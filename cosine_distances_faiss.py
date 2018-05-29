@@ -11,9 +11,9 @@ import faiss                # type: ignore
 NpArray     = Any
 TwoNpArrays = Tuple[NpArray, NpArray]
 
-FEATURES_DIR                = "experiments/feature_extractor/"
+FEATURES_DIR                = "experiments/feature_extractor_recognition/"
 FEATURES_TEST_FILE          = FEATURES_DIR + "features_test_0.npz"
-RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
+RETRIEVAL_DISTANCES_FILE    = "experiments/recognition/distances.npz"
 
 K = 100
 

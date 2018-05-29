@@ -47,7 +47,7 @@ def prepare_debugging(debug_dir: str) -> DefaultDict[int, List[str]]:
 
 def load_test_data(path: str) -> List[str]:
     """ Loads CSV files into memory. """
-    print("reading data...")
+    print("reading testset...")
     data = pd.read_csv(path)
     x = data["id"].tolist()
     print("len(x)", len(x))
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
                 # copy test sample, mention probabilities
                 os.symlink(root_dir + "data/test/" + test_img + ".jpg",
-                           directory + test_img + "_" + str(conf) + ".jpg")
+                           directory + str(conf) + "_" + test_img + ".jpg")
 
     x_test = load_test_data("recognition/test.csv")
     values = [""] * len(x_test)
