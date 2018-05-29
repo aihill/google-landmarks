@@ -189,11 +189,9 @@ else:
     logger.info("Training will be resumed from Epoch {}".format(last_checkpoint['epoch']))
 
 
-
-
-vis = visdom.Visdom(port=opt.VISDOM.PORT)
-vis.close()
-vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
+# vis = visdom.Visdom(port=opt.VISDOM.PORT)
+# vis.close()
+# vis.text('HELLO', win=0, env=opt.VISDOM.ENV)
 
 
 train_losses = []
@@ -370,8 +368,8 @@ for epoch in range(last_epoch+1, opt.TRAIN.EPOCHS+1):
             'optimizer' : optimizer.state_dict(),
         }, 'best_model.pk')
 
-        vis.text('Best accuracy: {} (Epoch {})'.format(prec1, epoch), win=0, env=opt.VISDOM.ENV)
-    visualize()
+        # vis.text('Best accuracy: {} (Epoch {})'.format(prec1, epoch), win=0, env=opt.VISDOM.ENV)
+    # visualize()
 
 
 logger.info('Best accuracy for single crop: {:.02f}%'.format(best_prec1))
