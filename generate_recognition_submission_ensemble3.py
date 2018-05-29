@@ -54,28 +54,36 @@ def load_test_data(path: str) -> List[str]:
     print()
     return x
 
+def merge_two_lists(classes1: List[int], conf1: List[float], classes2: List[int], conf2:
+                    List[float]) -> Tuple[List[int], List[float]]:
+    """ Merges two lists of classes + confidence arrays. """
+    second = {class_: conf for class_, conf in zip(classes2, conf2)}
+    merged_classes, merged_confs = [], []
+
+    for class_, confidence in zip(classes1, conf1):
+        if class_ in second:
+            merged_classes.append(class_)
+            merged_confs.append(confidence * second[class_])
+
+    return merged_classes, merged_confs
+
 def merge_results(all_classes: List[NpArray], all_confidences: List[NpArray],
                   sampleIdx: int) -> Tuple[int, float]:
     """ Merges predictions from all models for a single sample. """
-    assert(len(all_classes) == 2 and len(all_confidences) == 2)
+    L = len(all_classes)
+    assert(L == len(all_confidences))
+    mclasses, mconfs = all_classes[0][sampleIdx, :], all_confidences[0][sampleIdx, :]
 
-    classes0 = zip(all_classes[0][sampleIdx, :], all_confidences[0][sampleIdx, :])
-    classes1 = {class_: conf for class_, conf in zip(all_classes[1][sampleIdx, :],
-                                                     all_confidences[1][sampleIdx, :])}
+    for classes, confs in zip(all_classes[1:], all_confidences[1:]):
+        mclasses, mconfs = merge_two_lists(mclasses, mconfs, classes[sampleIdx, :],
+                                           confs[sampleIdx, :])
 
-    best_prob, best_class = 0.0, -1
-    for class_, conf1 in classes0:
-        if class_ in classes1:
-            prob = math.sqrt(conf1 * classes1[class_])
-            if prob > best_prob:
-                best_prob, best_class = prob, class_
-
-    if best_prob > 0 and best_class >= 0:
-        return best_class, best_prob
-    elif all_confidences[0][sampleIdx, 0] > all_confidences[1][sampleIdx, 0]:
-        return all_classes[0][sampleIdx, 0], all_confidences[0][sampleIdx, 0]
+    if not mclasses:
+        return 0, 0
     else:
-        return all_classes[1][sampleIdx, 0], all_confidences[1][sampleIdx, 0]
+        assert(len(mclasses) == len(mconfs))
+        conf = max(mconfs)
+        return mclasses[mconfs.index(conf)], math.pow(conf, 1 / L)
 
 if __name__ == "__main__":
     ###########################################################################
@@ -94,6 +102,7 @@ if __name__ == "__main__":
     # load prediction data
     ###########################################################################
     predictions = [
+        "experiments/3A/pred.npz",
         "experiments/3B/pred.npz",
         "experiments/4A/pred.npz"
         ]
@@ -138,7 +147,7 @@ if __name__ == "__main__":
         test_img = os.path.splitext(image_list[i])[0]
         class_, conf = merge_results(all_classes, all_confidences, i)
 
-        if test_img not in non_landmarks:
+        if test_img not in non_landmarks and conf != 0:
             data[test_img] = "%d %f" % (class_, conf)
 
             if ENABLE_DEBUGGING:
