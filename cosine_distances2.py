@@ -24,37 +24,35 @@ def find_landmarks(test_vectors: NpArray, best_indices: NpArray, best_distances:
 
     for base in tqdm(range(0, db_indices.shape[0], K)):
         # sizes (100, 115k) and (100, 1600), might be less then 100 in the end of array
-        indices = db_indices[base: base + K]
-
-        # TODO: fix this
-        expanded_shape = (indices.shape[0], best_distances.shape[1])
-        indices = db_indices[base: base + K].unsqueeze(-1).expand(expanded_shape)
-
+        # indices = db_indices[base: base + K]
+        expanded_shape = (K, best_distances.shape[1])
+        indices = np.zeros(expanded_shape)
+        indices[:] = db_indices[base: base + K].reshape(-1, 1)
         vectors = db_vectors[base: base + K, :]
-        print("\nindices, vectors", indices.shape, vectors.shape)
+        print("\nindices", indices.shape, "vectors", vectors.shape)
 
         # size (100, 115k)
         # new_distances = torch.mm(vectors, test_vectors)
         new_distances = np.matmul(vectors, test_vectors)
-        print(new_distances.shape)
+        print("new_distances", new_distances.shape)
 
         # both sizes are (200, 115k)
         # joint_distances = torch.cat((best_distances, new_distances))
         # joint_indices = torch.cat((best_indices, indices))
         joint_distances = np.vstack((best_distances, new_distances))
         joint_indices = np.vstack((best_indices, indices))
-        print(joint_distances.shape, joint_indices.shape)
+        print("joint_distances", joint_distances.shape, "joint_indices", joint_indices.shape)
 
         # both sizes are (100, 115k)
         # best_distances, indices = torch.topk(joint_distances, k=K, dim=0, largest=False)
-        indices = np.argsort(joint_distances, axis=0)[0:100, :]
+        indices = np.argsort(joint_distances, axis=0)[0:K, :]
         best_distances = joint_distances[indices]
-        print(best_distances.shape, indices.shape)
+        print("best_distances", best_distances.shape, "indices", indices.shape)
 
         # size (100, 115k)
         # best_indices = torch.gather(joint_indices, dim=0, index=indices)
         best_indices = joint_indices[indices]
-        print(best_indices.shape)
+        print("best_indices", best_indices.shape)
 
     return best_indices, best_distances
 
