@@ -1,7 +1,7 @@
-# google-landmarks
+# Google Landmark Recognition and Retrival
 My solution for the Google Landmark challenges on Kaggle: https://www.kaggle.com/c/landmark-recognition-challenge/ and https://www.kaggle.com/c/landmark-retrieval-challenge/. It was enough to secure a place in Top-40.
 
-## How it works.
+## How it works
 An ensemble of four networks:
 1. ResNet50
 2. DenseNet121
