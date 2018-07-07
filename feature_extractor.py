@@ -52,7 +52,7 @@ opt.MODEL.PRETRAINED = True
 opt.MODEL.INPUT_SIZE = 224 # crop size
 
 opt.EXPERIMENT = edict()
-opt.EXPERIMENT.CODENAME = 'feature_extractor_recognition'
+opt.EXPERIMENT.CODENAME = 'feature_extractor_retrieval'
 opt.EXPERIMENT.TASK = 'test'
 opt.EXPERIMENT.DIR = osp.join(cfg.EXPERIMENT_DIR, opt.EXPERIMENT.CODENAME)
 
@@ -65,7 +65,7 @@ opt.TEST.WORKERS = 12
 opt.TEST.BATCH_SIZE = 128
 opt.TEST.OUTPUT = osp.join(opt.EXPERIMENT.DIR, 'features_%s_%d.npz')
 
-opt.DATASET = 'recognition'
+opt.DATASET = 'retrieval'
 
 opt.VISDOM = edict()
 opt.VISDOM.PORT = 8097

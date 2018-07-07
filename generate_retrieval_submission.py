@@ -9,7 +9,7 @@ from tqdm import tqdm                   # type: ignore
 
 NpArray = Any
 
-FEATURES_TEST_FILE          = "experiments/feature_extractor/features_test_0.npz"
+FEATURES_TEST_FILE          = "experiments/feature_extractor_retrieval/features_test_0.npz"
 RETRIEVAL_DISTANCES_FILE    = "experiments/retrieval/distances.npz"
 NON_LANDMARK_CLASSIFIER     = "experiments/no_class_1/pred.npz"
 TEST_CSV                    = "retrieval/test.csv"
